@@ -1,1 +1,7 @@
-spring.application.name=rivalquest
+spring:
+  application:
+    name: rivalquest
+
+axon:
+  axonserver:
+    enabled: false

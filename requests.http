@@ -1,0 +1,69 @@
+### Register User One
+
+POST http://localhost:8080/users
+Content-Type: application/json
+
+{
+  "name": "User One"
+}
+
+> {%
+    client.global.set("userOne", response.body.userId);
+%}
+
+### Get User One
+
+GET http://localhost:8080/users/{{userOne}}
+Content-Type: application/json
+
+### Register User Two
+
+POST http://localhost:8080/users
+Content-Type: application/json
+
+{
+  "name": "User Two"
+}
+
+> {%
+    client.global.set("userTwo", response.body.userId);
+%}
+
+### Create game
+
+POST http://localhost:8080/games
+Content-Type: application/json
+User: {{userOne}}
+
+{
+  "gameType": "OFFICIAL"
+}
+
+> {%
+    client.global.set("gameId", response.body.gameId);
+%}
+
+### Join game
+
+POST http://localhost:8080/games/{{gameId}}/join
+Content-Type: application/json
+User: {{userTwo}}
+
+### Finish game
+
+POST http://localhost:8080/games/{{gameId}}/finish
+Content-Type: application/json
+
+{
+  "result": "0-1"
+}
+
+### Get all games
+
+GET http://localhost:8080/games
+Content-Type: application/json
+
+### Get User Ranking
+
+GET http://localhost:8080/ranking
+Content-Type: application/json

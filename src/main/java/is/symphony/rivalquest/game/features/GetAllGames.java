@@ -1,35 +1,26 @@
 package is.symphony.rivalquest.game.features;
 
 import is.symphony.rivalquest.game.Game;
-import is.symphony.rivalquest.game.GameProjection;
+import org.axonframework.messaging.responsetypes.ResponseTypes;
+import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerResponse;
 
-import java.util.UUID;
-
 import static org.springframework.web.servlet.function.RouterFunctions.route;
 
 @Component
-public class GetGame {
+public class GetAllGames {
+
+    public record GetAllGamesQuery() { }
+
     @Bean
-    public RouterFunction<ServerResponse> getGameRoute(GameProjection gameProjection) {
-        return route().GET("/games/{gameId}", req -> {
-            try {
-                var gameId = UUID.fromString(req.pathVariable("gameId"));
+    public RouterFunction<ServerResponse> getAllGamesRoute(QueryGateway queryGateway) {
+        return route().GET("/games", req -> {
+            var games = queryGateway.query(new GetAllGamesQuery(), ResponseTypes.multipleInstancesOf(Game.class));
 
-                Game game = gameProjection.getGame(gameId);
-
-                if (game == null) {
-                    return ServerResponse.notFound().build();
-                }
-
-                return ServerResponse.ok().body(gameProjection.getGame(gameId));
-            }
-            catch (IllegalArgumentException e) {
-                return ServerResponse.badRequest().body(e.getMessage());
-            }
+            return ServerResponse.ok().body(games);
         }).build();
     }
 }

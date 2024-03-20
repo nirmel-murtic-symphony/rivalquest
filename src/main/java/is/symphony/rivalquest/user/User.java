@@ -1,12 +1,12 @@
-package is.symphony.rivalquest.player;
+package is.symphony.rivalquest.user;
 
 import java.util.UUID;
 
-public class Player {
+public class User {
     private final UUID id;
     private String name;
 
-    public Player(final UUID id) {
+    public User(final UUID id) {
         this.id = id;
     }
 

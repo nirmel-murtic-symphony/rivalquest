@@ -1,7 +1,10 @@
 package is.symphony.rivalquest.game.features;
 
-import is.symphony.rivalquest.game.GameType;
+import is.symphony.rivalquest.user.User;
+import is.symphony.rivalquest.user.features.GetUser;
 import org.axonframework.commandhandling.gateway.CommandGateway;
+import org.axonframework.modelling.command.TargetAggregateIdentifier;
+import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.function.RouterFunction;
@@ -11,27 +14,32 @@ import java.util.UUID;
 
 import static org.springframework.web.servlet.function.RouterFunctions.route;
 
-import is.symphony.rivalquest.game.GameAggregate.*;
-
 @Component
-public class CreateGame {
+public class JoinGame {
 
-    record Request(GameType gameType) { }
-
-    record Response(UUID gameId) { }
+    public record JoinGameCommand(@TargetAggregateIdentifier UUID gameId, UUID playerId) { }
 
     @Bean
-    public RouterFunction<ServerResponse> createGameRoute(CommandGateway commandGateway) {
-        return route().POST("/games", req -> {
-            Request request = req.body(Request.class);
+    public RouterFunction<ServerResponse> joinGameRoute(CommandGateway commandGateway, QueryGateway queryGateway) {
+        return route().POST("/games/{gameId}/join", req -> {
+            try {
+                var userId = UUID.fromString(req.headers().header("User").getFirst());
 
-            UUID userId = UUID.fromString(req.headers().header("User").getFirst());
+                var user = queryGateway.query(new GetUser.GetUserQuery(userId), User.class).join();
 
-            UUID gameId = commandGateway.sendAndWait(
-                    new CreateGameCommand(
-                            UUID.randomUUID(), userId, request.gameType()));
+                if (user == null) {
+                    return ServerResponse.badRequest().body("User doesn't exist");
+                }
 
-            return ServerResponse.ok().body(new Response(gameId));
+                var gameId = UUID.fromString(req.pathVariable("gameId"));
+
+                commandGateway.sendAndWait(new JoinGameCommand(gameId, userId));
+
+                return ServerResponse.noContent().build();
+            }
+            catch (IllegalStateException | IllegalArgumentException e) {
+                return ServerResponse.badRequest().body(e.getMessage());
+            }
         }).build();
     }
 }

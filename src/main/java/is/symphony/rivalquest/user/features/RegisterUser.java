@@ -1,8 +1,8 @@
-package is.symphony.rivalquest.game.features;
+package is.symphony.rivalquest.user.features;
 
-import is.symphony.rivalquest.game.GameType;
+import is.symphony.rivalquest.user.UserService;
+import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.commandhandling.gateway.CommandGateway;
-import org.axonframework.modelling.command.TargetAggregateIdentifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.function.RouterFunction;
@@ -13,26 +13,27 @@ import java.util.UUID;
 import static org.springframework.web.servlet.function.RouterFunctions.route;
 
 @Component
-public class CreateGame {
+public class RegisterUser {
 
-    record Request(GameType gameType) { }
+    record Request(String name) { }
 
-    public record CreateGameCommand(@TargetAggregateIdentifier UUID gameId, UUID playerId, GameType gameType) { }
+    public record RegisterUserCommand(String name) { }
 
-    record Response(UUID gameId) { }
+    record Response(UUID userId) { }
 
     @Bean
-    public RouterFunction<ServerResponse> createGameRoute(CommandGateway commandGateway) {
-        return route().POST("/games", req -> {
+    public RouterFunction<ServerResponse> registerUserRoute(CommandGateway commandGateway) {
+        return route().POST("/users", req -> {
             var request = req.body(Request.class);
 
-            var userId = UUID.fromString(req.headers().header("User").getFirst());
+            UUID userId = commandGateway.sendAndWait(new RegisterUserCommand(request.name()));
 
-            UUID gameId = commandGateway.sendAndWait(
-                    new CreateGameCommand(
-                            UUID.randomUUID(), userId, request.gameType()));
-
-            return ServerResponse.ok().body(new Response(gameId));
+            return ServerResponse.ok().body(new Response(userId));
         }).build();
+    }
+
+    @CommandHandler
+    public UUID handle(RegisterUserCommand command, UserService userService) {
+        return userService.addNewUser(command.name());
     }
 }

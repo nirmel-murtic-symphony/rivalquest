@@ -1,7 +1,9 @@
-package is.symphony.rivalquest.game.features;
+package is.symphony.rivalquest.user.features;
 
-import is.symphony.rivalquest.game.Game;
+import is.symphony.rivalquest.user.User;
+import is.symphony.rivalquest.user.UserService;
 import org.axonframework.queryhandling.QueryGateway;
+import org.axonframework.queryhandling.QueryHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.function.RouterFunction;
@@ -12,27 +14,32 @@ import java.util.UUID;
 import static org.springframework.web.servlet.function.RouterFunctions.route;
 
 @Component
-public class GetGame {
+public class GetUser {
 
-    public record GetGameQuery(UUID gameId) { }
+    public record GetUserQuery(UUID userId) { }
 
     @Bean
-    public RouterFunction<ServerResponse> getGameRoute(QueryGateway queryGateway) {
-        return route().GET("/games/{gameId}", req -> {
+    public RouterFunction<ServerResponse> getUserRoute(QueryGateway queryGateway) {
+        return route().GET("/users/{userId}", req -> {
             try {
-                var gameId = UUID.fromString(req.pathVariable("gameId"));
+                var userId = UUID.fromString(req.pathVariable("userId"));
 
-                var game = queryGateway.query(new GetGameQuery(gameId), Game.class);
+                var user = queryGateway.query(new GetUserQuery(userId), User.class);
 
-                if (game == null) {
+                if (user == null) {
                     return ServerResponse.notFound().build();
                 }
 
-                return ServerResponse.ok().body(game);
+                return ServerResponse.ok().body(user);
             }
             catch (IllegalArgumentException e) {
                 return ServerResponse.badRequest().body(e.getMessage());
             }
         }).build();
+    }
+
+    @QueryHandler
+    public User handle(GetUserQuery query, UserService userService) {
+        return userService.getUser(query.userId());
     }
 }
